@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SapaFlow — Zero-Based Budgeting & Cash Flow Planner</title>
+  <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              200: '#a7f3d0',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+              950: '#022c22',
+            },
+            cream: {
+              50: '#fdfcf9',
+              100: '#f8f6f0',
+              200: '#efeCE3',
+            }
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-cream-100 text-slate-800 font-sans antialiased selection:bg-brand-200 selection:text-brand-950 min-h-screen flex flex-col">
+
+  <!-- Toast Notification Container (Replaces alert/confirm) -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="bg-white/95 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-800 to-brand-950 flex items-center justify-center text-white shadow-sm ring-1 ring-brand-700/30">
+          <!-- Custom SVG Envelope + Naira Flow Mark -->
+          <svg class="w-6 h-6 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-display font-extrabold text-xl tracking-tight text-slate-900">Sapa<span class="text-brand-700">Flow</span></h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-brand-50 text-brand-800 border border-brand-200">Zero-Based</span>
+          </div>
+          <p class="text-xs text-slate-500 font-medium">Escape Sapa • Every Naira Assigned</p>
+        </div>
+      </div>
+
+      <!-- Controls: Month Selector, Currency Switcher, Export & Reset -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-2.5">
+        <!-- Month Selector -->
+        <div class="relative">
+          <select id="month-selector" aria-label="Select Budget Month" class="appearance-none bg-cream-50 hover:bg-slate-100 border border-slate-200 text-slate-800 text-xs sm:text-sm font-semibold rounded-xl pl-3 pr-8 py-2 transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-600">
+            <option value="2026-11">November 2026</option>
+            <option value="2026-12">December 2026 (Detty Dec)</option>
+            <option value="2027-01">January 2027</option>
+          </select>
+          <svg class="w-4 h-4 text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+
+        <!-- Currency Switcher -->
+        <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200/80" role="group" aria-label="Currency Switcher">
+          <button type="button" data-currency="NGN" class="currency-btn px-2.5 py-1 rounded-lg text-xs font-bold transition">₦ NGN</button>
+          <button type="button" data-currency="USD" class="currency-btn px-2.5 py-1 rounded-lg text-xs font-bold transition">$ USD</button>
+          <button type="button" data-currency="GBP" class="currency-btn px-2.5 py-1 rounded-lg text-xs font-bold transition">£ GBP</button>
+          <button type="button" data-currency="EUR" class="currency-btn px-2.5 py-1 rounded-lg text-xs font-bold transition">€ EUR</button>
+        </div>
+
+        <!-- Export CSV -->
+        <button id="export-csv-btn" type="button" title="Export Monthly Summary CSV" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs transition cursor-pointer">
+          <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span class="hidden md:inline">Export CSV</span>
+        </button>
+
+        <!-- Reset Demo Data -->
+        <button id="reset-demo-btn" type="button" title="Reset to Sample Nigerian Monthly Budget" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 transition cursor-pointer">
+          <svg class="w-4 h-4 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span class="hidden sm:inline">Demo Data</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- 1. ZERO-BASED BUDGETING HERO BAR ("Ready to Assign" Banner) -->
+    <section aria-label="Zero-Based Budget Summary" class="rounded-2xl bg-gradient-to-br from-brand-950 via-brand-900 to-slate-900 text-white p-5 sm:p-6 shadow-lg border border-brand-800/60">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+        <!-- Metrics Trio -->
+        <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div class="bg-white/10 backdrop-blur-xs rounded-xl p-3.5 border border-white/10">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-emerald-200/80 uppercase tracking-wider">Monthly Income</span>
+              <button id="toggle-income-drawer-top" type="button" class="text-[11px] font-semibold text-emerald-300 hover:text-white underline underline-offset-2 cursor-pointer">+ Edit</button>
+            </div>
+            <p id="hero-total-income" class="text-xl sm:text-2xl font-display font-extrabold mt-1 tracking-tight text-white">₦0</p>
+            <p id="hero-income-count" class="text-[11px] text-emerald-200/70 mt-0.5">0 active streams</p>
+          </div>
+
+          <div class="bg-white/10 backdrop-blur-xs rounded-xl p-3.5 border border-white/10">
+            <span class="text-xs font-medium text-emerald-200/80 uppercase tracking-wider">Total Assigned</span>
+            <p id="hero-total-assigned" class="text-xl sm:text-2xl font-display font-extrabold mt-1 tracking-tight text-white">₦0</p>
+            <p id="hero-assigned-pct" class="text-[11px] text-emerald-200/70 mt-0.5">0% of income allocated</p>
+          </div>
+
+          <div class="bg-white/10 backdrop-blur-xs rounded-xl p-3.5 border border-white/10">
+            <span class="text-xs font-medium text-emerald-200/80 uppercase tracking-wider">Total Spent</span>
+            <p id="hero-total-spent" class="text-xl sm:text-2xl font-display font-extrabold mt-1 tracking-tight text-white">₦0</p>
+            <p id="hero-available-cash" class="text-[11px] text-emerald-200/70 mt-0.5">₦0 left in envelopes</p>
+          </div>
+        </div>
+
+        <!-- Signature "Left to Assign" Zero-Based Status Card -->
+        <div id="zero-base-status-card" class="lg:col-span-5 rounded-xl p-4 sm:p-5 border transition-all duration-300 bg-emerald-500/15 border-emerald-400/30">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <span id="zero-base-label" class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-300">
+                Ready to Assign
+              </span>
+              <p id="hero-left-to-assign" class="text-2xl sm:text-3xl font-display font-extrabold mt-1 tracking-tight text-white">₦0</p>
+              <p id="zero-base-message" class="text-xs sm:text-sm text-emerald-100/90 mt-1 leading-relaxed">
+                Give every Naira a clear job before the month begins.
+              </p>
+            </div>
+            <div id="zero-base-icon" class="w-11 h-11 rounded-xl bg-emerald-400/20 flex items-center justify-center text-xl shrink-0">
+              🎯
+            </div>
+          </div>
+          <!-- Quick Action Button (Shown when unallocated > 0 or over-assigned < 0) -->
+          <div id="zero-base-action-wrap" class="mt-3 pt-3 border-t border-white/15 hidden">
+            <button id="auto-assign-btn" type="button" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold bg-emerald-400 hover:bg-emerald-300 text-brand-950 transition shadow-xs cursor-pointer">
+              <span>⚡ Auto-Assign Remainder to Emergency & Savings</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. INCOME STREAMS MANAGER (Collapsible Panel) -->
+    <section aria-label="Income Streams Manager" class="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
+      <div class="px-5 py-3.5 bg-cream-50/70 border-b border-slate-200/70 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-brand-100 text-brand-800 flex items-center justify-center text-sm font-bold">₦</span>
+          <div>
+            <h2 class="font-display font-bold text-sm sm:text-base text-slate-900">Monthly Income Streams</h2>
+            <p class="text-xs text-slate-500">Add salary, tech gigs, side hustles, or business inflows</p>
+          </div>
+        </div>
+        <button id="toggle-income-panel-btn" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition cursor-pointer">
+          <span id="income-panel-toggle-text">Hide Streams</span>
+          <svg id="income-panel-chevron" class="w-4 h-4 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="income-panel-body" class="p-5 space-y-4">
+        <!-- Income List Grid -->
+        <div id="income-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+
+        <!-- Add Income Stream Form -->
+        <form id="add-income-form" class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+          <div class="flex-1">
+            <label for="income-name-input" class="block text-xs font-semibold text-slate-600 mb-1">Income Source Name</label>
+            <input id="income-name-input" type="text" required placeholder="e.g., Upwork Dollar Gig or Weekend Catering" class="w-full rounded-xl border border-slate-200 bg-cream-50/50 px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600" />
+          </div>
+          <div class="sm:w-52">
+            <label for="income-amount-input" class="block text-xs font-semibold text-slate-600 mb-1">Amount (<span class="active-currency-symbol">₦</span>)</label>
+            <input id="income-amount-input" type="number" step="any" min="1" required placeholder="e.g., 150000" class="w-full rounded-xl border border-slate-200 bg-cream-50/50 px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600" />
+          </div>
+          <button type="submit" class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-brand-800 hover:bg-brand-900 text-white transition shadow-2xs cursor-pointer">
+            <span>+ Add Inflow</span>
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 3. MAIN WORKSPACE: ENVELOPES + ANALYTICS & LEDGER -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- LEFT / MAIN COLUMN (8 cols): Interactive Categorized Envelopes -->
+      <div class="lg:col-span-8 space-y-5">
+        <!-- Envelope Toolbar -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="Filter Envelopes by Category">
+            <button type="button" data-cat-filter="ALL" class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-800 text-white transition cursor-pointer">All Envelopes</button>
+            <button type="button" data-cat-filter="Fixed & Bills" class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200/70 transition cursor-pointer">🏠 Fixed & Bills</button>
+            <button type="button" data-cat-filter="Daily Living" class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200/70 transition cursor-pointer">🍲 Daily Living</button>
+            <button type="button" data-cat-filter="Savings & Investments" class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200/70 transition cursor-pointer">🛡️ Savings & Wealth</button>
+            <button type="button" data-cat-filter="Lifestyle & Flex" class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200/70 transition cursor-pointer">🎉 Lifestyle & Flex</button>
+          </div>
+
+          <button id="open-new-envelope-modal" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-brand-50 hover:bg-brand-100 text-brand-900 border border-brand-200 transition cursor-pointer">
+            <span>+ New Envelope</span>
+          </button>
+        </div>
+
+        <!-- Categorized Envelopes Container -->
+        <div id="envelopes-container" class="space-y-6"></div>
+      </div>
+
+      <!-- RIGHT COLUMN (4 cols): Visual Analytics + Quick Expense Logger + Recent Ledger -->
+      <div class="lg:col-span-4 space-y-6">
+
+        <!-- Visual Cash Flow Analytics Card -->
+        <section aria-label="Cash Flow Analytics" class="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="font-display font-bold text-base text-slate-900">Cash Flow Breakdown</h2>
+              <p class="text-xs text-slate-500">Allocation across budget pillars</p>
+            </div>
+            <!-- Sapa Shield Score Pill -->
+            <div id="sapa-shield-badge" class="px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-right">
+              <span class="block text-[10px] font-bold uppercase tracking-wider text-emerald-700">Sapa Shield</span>
+              <span id="sapa-shield-score" class="text-sm font-display font-extrabold text-emerald-900">85/100</span>
+            </div>
+          </div>
+
+          <!-- Responsive Donut Chart Canvas + Center Metric -->
+          <div class="relative flex items-center justify-center py-2">
+            <div class="w-48 h-48 relative">
+              <canvas id="allocation-donut-canvas"></canvas>
+              <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
+                <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wide">Savings Rate</span>
+                <span id="analytics-savings-rate" class="text-xl font-display font-extrabold text-slate-900">0%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Category Breakdown Legend -->
+          <div id="analytics-legend" class="space-y-2.5 pt-2 border-t border-slate-100"></div>
+        </section>
+
+        <!-- Quick Expense Logger Card -->
+        <section aria-label="Quick Expense Logger" class="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="font-display font-bold text-base text-slate-900">Log an Expense</h2>
+              <p class="text-xs text-slate-500">Deduct directly from an envelope</p>
+            </div>
+            <span class="text-lg">🧾</span>
+          </div>
+
+          <form id="quick-expense-form" class="space-y-3">
+            <div>
+              <label for="expense-envelope-select" class="block text-xs font-semibold text-slate-600 mb-1">Envelope</label>
+              <select id="expense-envelope-select" required class="w-full rounded-xl border border-slate-200 bg-cream-50/50 px-3 py-2 text-sm font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"></select>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="expense-amount-input" class="block text-xs font-semibold text-slate-600 mb-1">Amount (<span class="active-currency-symbol">₦</span>)</label>
+                <input id="expense-amount-input" type="number" step="any" min="0.01" required placeholder="5000" class="w-full rounded-xl border border-slate-200 bg-cream-50/50 px-3 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600" />
+              </div>
+              <div>
+                <label for="expense-date-input" class="block text-xs font-semibold text-slate-600 mb-1">Date</label>
+                <input id="expense-date-input" type="date" required class="w-full rounded-xl border border-slate-200 bg-cream-50/50 px-3 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600" />
+              </div>
+            </div>
+
+            <div>
+              <label for="expense-desc-input" class="block text-xs font-semibold text-slate-600 mb-1">Merchant / Note</label>
+              <input id="expense-desc-input" type="text" required placeholder="e.g., Ikeja Electric Token, Bolt to VI, Amala Skye" class="w-full rounded-xl border border-slate-200 bg-cream-50/50 px-3 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600" />
+            </div>
+
+            <button type="submit" class="w-full py-2.5 px-4 rounded-xl text-sm font-bold bg-brand-800 hover:bg-brand-900 text-white transition shadow-xs cursor-pointer">
+              Record Expense
+            </button>
+          </form>
+        </section>
+
+        <!-- Transaction Ledger Feed -->
+        <section aria-label="Transaction Ledger" class="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h2 class="font-display font-bold text-base text-slate-900">Recent Transactions</h2>
+              <p id="tx-count-label" class="text-xs text-slate-500">0 expenses recorded</p>
+            </div>
+            <select id="tx-filter-envelope" aria-label="Filter transactions by envelope" class="rounded-xl border border-slate-200 bg-cream-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-600 max-w-[145px]">
+              <option value="ALL">All Envelopes</option>
+            </select>
+          </div>
+
+          <div id="transaction-list" class="divide-y divide-slate-100 max-h-[380px] overflow-y-auto pr-1"></div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-200/80 bg-white py-4 px-4 sm:px-6 lg:px-8 mt-8">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <p><strong class="text-slate-700">SapaFlow</strong> — Zero-Based Envelope Cash Flow Planner. Built for intentional money habits.</p>
+      <p>All changes save automatically to your browser.</p>
+    </div>
+  </footer>
+
+  <!-- MODAL 1: Create / Edit Envelope -->
+  <div id="envelope-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 id="envelope-modal-title" class="font-display font-bold text-lg text-slate-900">Create New Envelope</h3>
+        <button type="button" data-close-modal="envelope-modal" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer">✕</button>
+      </div>
+
+      <form id="envelope-modal-form" class="space-y-3.5">
+        <input type="hidden" id="edit-envelope-id" />
+
+        <div class="grid grid-cols-4 gap-3">
+          <div>
+            <label for="env-icon-input" class="block text-xs font-semibold text-slate-600 mb-1">Icon</label>
+            <input id="env-icon-input" type="text" maxlength="4" value="💼" required class="w-full text-center rounded-xl border border-slate-200 bg-cream-50 px-2 py-2 text-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600" />
+          </div>
+          <div class="col-span-3">
+            <label for="env-name-input" class="block text-xs font-semibold text-slate-600 mb-1">Envelope Name</label>
+            <input id="env-name-input" type="text" required placeholder="e.g., Detty December Fund" class="w-full rounded-xl border border-slate-200 bg-cream-50 px-3.5 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600" />
+          </div>
+        </div>
+
+        <div>
+          <label for="env-category-input" class="block text-xs font-semibold text-slate-600 mb-1">Category</label>
+          <select id="env-category-input" required class="w-full rounded-xl border border-slate-200 bg-cream-50 px-3.5 py-2 text-sm font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600">
+            <option value="Fixed & Bills">Fixed & Bills</option>
+            <option value="Daily Living">Daily Living</option>
+            <option value="Savings & Investments">Savings & Investments</option>
+            <option value="Lifestyle & Flex">Lifestyle & Flex</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="env-assigned-input" class="block text-xs font-semibold text-slate-600 mb-1">Assigned Budget (<span class="active-currency-symbol">₦</span>)</label>
+          <input id="env-assigned-input" type="number" step="any" min="0" required placeholder="25000" class="w-full rounded-xl border border-slate-200 bg-cream-50 px-3.5 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600" />
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" data-close-modal="envelope-modal" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand-800 hover:bg-brand-900 text-white cursor-pointer">Save Envelope</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Cover Overspending (Move Money Between Envelopes) -->
+  <div id="cover-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center text-sm font-bold">⇄</span>
+          <h3 class="font-display font-bold text-lg text-slate-900">Cover Overspending</h3>
+        </div>
+        <button type="button" data-close-modal="cover-modal" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer">✕</button>
+      </div>
+
+      <p id="cover-modal-desc" class="text-xs text-slate-600 leading-relaxed bg-rose-50 border border-rose-200/80 rounded-xl p-3"></p>
+
+      <form id="cover-modal-form" class="space-y-3.5">
+        <input type="hidden" id="cover-target-id" />
+        <div>
+          <label for="cover-source-select" class="block text-xs font-semibold text-slate-600 mb-1">Move Funds From Envelope</label>
+          <select id="cover-source-select" required class="w-full rounded-xl border border-slate-200 bg-cream-50 px-3.5 py-2 text-sm font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"></select>
+        </div>
+
+        <div>
+          <label for="cover-amount-input" class="block text-xs font-semibold text-slate-600 mb-1">Amount to Move (<span class="active-currency-symbol">₦</span>)</label>
+          <input id="cover-amount-input" type="number" step="any" min="0.01" required class="w-full rounded-xl border border-slate-200 bg-cream-50 px-3.5 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600" />
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" data-close-modal="cover-modal" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white cursor-pointer">Transfer Funds</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // 1. CURRENCY CONFIGURATION & FORMATTERS
+      // =========================================================================
+      // All internal monetary values are stored in NGN (base currency) and converted dynamically
+      // so switching between NGN, USD, GBP, and EUR keeps proportions accurate.
+      const CURRENCIES = {
+        NGN: { symbol: '₦', code: 'NGN', rate: 1, step: 5000, decimals: 0 },
+        USD: { symbol: '$', code: 'USD', rate: 1 / 1600, rateNote: '1 USD ≈ ₦1,600', step: 10, decimals: 2 },
+        GBP: { symbol: '£', code: 'GBP', rate: 1 / 2050, rateNote: '1 GBP ≈ ₦2,050', step: 10, decimals: 2 },
+        EUR: { symbol: '€', code: 'EUR', rate: 1 / 1750, rateNote: '1 EUR ≈ ₦1,750', step: 10, decimals: 2 }
+      };
+
+      const CATEGORIES = [
+        { name: 'Fixed & Bills', icon: '🏠', color: '#047857', bgLight: 'bg-emerald-50', textCol: 'text-emerald-800', borderCol: 'border-emerald-200' },
+        { name: 'Daily Living', icon: '🍲', color: '#0ea5e9', bgLight: 'bg-sky-50', textCol: 'text-sky-800', borderCol: 'border-sky-200' },
+        { name: 'Savings & Investments', icon: '🛡️', color: '#f59e0b', bgLight: 'bg-amber-50', textCol: 'text-amber-800', borderCol: 'border-amber-200' },
+        { name: 'Lifestyle & Flex', icon: '🎉', color: '#8b5cf6', bgLight: 'bg-violet-50', textCol: 'text-violet-800', borderCol: 'border-violet-200' }
+      ];
+
+      const STORAGE_KEY = 'sapaflow_budget_v1';
+
+      // =========================================================================
+      // 2. SAMPLE NIGERIAN MONTHLY BUDGET DATA
+      // =========================================================================
+      function createDemoData(monthKey = '2026-11') {
+        const multiplier = monthKey === '2026-12' ? 1.15 : 1;
+        return {
+          currency: 'NGN',
+          currentMonth: monthKey,
+          months: {
+            [monthKey]: {
+              incomes: [
+                { id: 'inc-1', name: 'Primary Tech / Corporate Salary', amount: Math.round(650000 * multiplier) },
+                { id: 'inc-2', name: 'Side Hustle & Weekend Consulting', amount: Math.round(150000 * multiplier) }
+              ],
+              envelopes: [
+                // Fixed & Bills
+                { id: 'env-rent', name: 'Rent & House Savings', category: 'Fixed & Bills', icon: '🏠', assigned: Math.round(160000 * multiplier) },
+                { id: 'env-power', name: 'NEPA / Solar & Generator Fuel', category: 'Fixed & Bills', icon: '⚡', assigned: Math.round(65000 * multiplier) },
+                { id: 'env-data', name: 'Data, Fiber & Airtime', category: 'Fixed & Bills', icon: '📶', assigned: 30000 },
+                // Daily Living
+                { id: 'env-food', name: 'Foodstuffs & Groceries', category: 'Daily Living', icon: '🍲', assigned: Math.round(120000 * multiplier) },
+                { id: 'env-transport', name: 'Transport, Fuel & Bolt/Uber', category: 'Daily Living', icon: '🚕', assigned: 65000 },
+                // Savings & Investments
+                { id: 'env-emergency', name: 'Emergency Fund (PiggyVest)', category: 'Savings & Investments', icon: '🛡️', assigned: Math.round(130000 * multiplier) },
+                { id: 'env-invest', name: 'Dollar Mutual Fund (Cowrywise)', category: 'Savings & Investments', icon: '📈', assigned: Math.round(90000 * multiplier) },
+                // Lifestyle & Flex
+                { id: 'env-blacktax', name: 'Black Tax & Family Support', category: 'Lifestyle & Flex', icon: '🤝', assigned: 60000 },
+                { id: 'env-flex', name: 'Enjoyment, Suya & Outings', category: 'Lifestyle & Flex', icon: '🍢', assigned: Math.round(80000 * multiplier) }
+              ],
+              transactions: [
+                { id: 'tx-1', envelopeId: 'env-food', desc: 'Shoprite & Mile 12 Market Run', amount: 54500, date: `${monthKey}-04` },
+                { id: 'tx-2', envelopeId: 'env-power', desc: 'Ikeja Electric Prepaid Token', amount: 42000, date: `${monthKey}-06` },
+                { id: 'tx-3', envelopeId: 'env-data', desc: 'MTN 5G Broadband + Personal Data', amount: 24500, date: `${monthKey}-08` },
+                { id: 'tx-4', envelopeId: 'env-transport', desc: 'Bolt Rides (Lekki to VI) & Fuel', amount: 38000, date: `${monthKey}-11` },
+                { id: 'tx-5', envelopeId: 'env-emergency', desc: 'Auto-Save Transfer to PiggyVest', amount: 130000, date: `${monthKey}-12` },
+                { id: 'tx-6', envelopeId: 'env-blacktax', desc: 'Mumsy Monthly Allowance & Cousin Data', amount: 55000, date: `${monthKey}-15` },
+                { id: 'tx-7', envelopeId: 'env-flex', desc: 'Friday Night Suya, Shawarma & Cinema', amount: 86500, date: `${monthKey}-18` }
+              ]
+            }
+          }
+        };
+      }
+
+      // =========================================================================
+      // 3. STATE MANAGEMENT & PERSISTENCE
+      // =========================================================================
+      let state = loadState();
+      let activeCategoryFilter = 'ALL';
+      let activeTxEnvelopeFilter = 'ALL';
+      let isIncomePanelOpen = true;
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.months && parsed.currentMonth) {
+              return parsed;
+            }
+          }
+        } catch (err) {
+          console.error('Failed to read SapaFlow state:', err);
+        }
+        return createDemoData('2026-11');
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (err) {
+          console.error('Failed to save SapaFlow state:', err);
+        }
+      }
+
+      function getCurrentMonthData() {
+        const m = state.currentMonth;
+        if (!state.months[m]) {
+          state.months[m] = createDemoData(m).months[m];
+          saveState();
+        }
+        return state.months[m];
+      }
+
+      // Currency Conversion Helpers
+      function toDisplayAmount(ngnAmount) {
+        const cfg = CURRENCIES[state.currency] || CURRENCIES.NGN;
+        return ngnAmount * cfg.rate;
+      }
+
+      function fromDisplayAmount(displayAmount) {
+        const cfg = CURRENCIES[state.currency] || CURRENCIES.NGN;
+        return displayAmount / cfg.rate;
+      }
+
+      function formatMoney(ngnAmount, showSign = false) {
+        const cfg = CURRENCIES[state.currency] || CURRENCIES.NGN;
+        const val = toDisplayAmount(ngnAmount);
+        const absFormatted = Math.abs(val).toLocaleString('en-US', {
+          minimumFractionDigits: cfg.decimals,
+          maximumFractionDigits: cfg.decimals
+        });
+        const prefix = val < -0.004 ? '-' : (showSign && val > 0.004 ? '+' : '');
+        return `${prefix}${cfg.symbol}${absFormatted}`;
+      }
+
+      // =========================================================================
+      // 4. TOAST NOTIFICATIONS (Non-blocking UI Feedback)
+      // =========================================================================
+      function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        const styles = {
+          success: 'bg-brand-950 text-white border-brand-700',
+          warning: 'bg-amber-900 text-amber-50 border-amber-600',
+          error: 'bg-rose-900 text-rose-50 border-rose-600'
+        };
+        toast.className = `pointer-events-auto flex items-center justify-between gap-3 px-4 py-3 rounded-xl border shadow-lg text-xs font-semibold transition-all duration-300 transform translate-y-2 opacity-0 ${styles[type] || styles.success}`;
+        toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+        container.appendChild(toast);
+
+        requestAnimationFrame(() => {
+          toast.classList.remove('translate-y-2', 'opacity-0');
+        });
+
+        setTimeout(() => {
+          toast.classList.add('opacity-0', 'translate-y-2');
+          setTimeout(() => toast.remove(), 300);
+        }, 3200);
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      // =========================================================================
+      // 5. CORE BUDGET CALCULATIONS
+      // =========================================================================
+      function computeBudgetMetrics() {
+        const data = getCurrentMonthData();
+        const totalIncome = data.incomes.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+        const totalAssigned = data.envelopes.reduce((sum, env) => sum + Number(env.assigned || 0), 0);
+
+        const spentByEnvelope = {};
+        data.envelopes.forEach(env => { spentByEnvelope[env.id] = 0; });
+        data.transactions.forEach(tx => {
+          if (spentByEnvelope[tx.envelopeId] !== undefined) {
+            spentByEnvelope[tx.envelopeId] += Number(tx.amount || 0);
+          }
+        });
+
+        const totalSpent = Object.values(spentByEnvelope).reduce((sum, v) => sum + v, 0);
+        const leftToAssign = totalIncome - totalAssigned;
+        const totalAvailable = totalAssigned - totalSpent;
+
+        return {
+          totalIncome,
+          totalAssigned,
+          totalSpent,
+          leftToAssign,
+          totalAvailable,
+          spentByEnvelope
+        };
+      }
+
+      // =========================================================================
+      // 6. RENDERING ENGINE
+      // =========================================================================
+      function renderAll() {
+        const metrics = computeBudgetMetrics();
+        renderHeaderControls();
+        renderHeroBanner(metrics);
+        renderIncomePanel();
+        renderEnvelopes(metrics);
+        renderExpenseFormOptions();
+        renderTransactionLedger();
+        renderAnalytics(metrics);
+      }
+
+      function renderHeaderControls() {
+        document.getElementById('month-selector').value = state.currentMonth;
+        document.querySelectorAll('.currency-btn').forEach(btn => {
+          const isActive = btn.dataset.currency === state.currency;
+          btn.className = isActive
+            ? 'currency-btn px-2.5 py-1 rounded-lg text-xs font-bold transition bg-brand-800 text-white shadow-2xs cursor-pointer'
+            : 'currency-btn px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900 cursor-pointer';
+        });
+
+        const sym = CURRENCIES[state.currency].symbol;
+        document.querySelectorAll('.active-currency-symbol').forEach(el => {
+          el.textContent = sym;
+        });
+      }
+
+      function renderHeroBanner(metrics) {
+        const data = getCurrentMonthData();
+        document.getElementById('hero-total-income').textContent = formatMoney(metrics.totalIncome);
+        document.getElementById('hero-income-count').textContent = `${data.incomes.length} active ${data.incomes.length === 1 ? 'stream' : 'streams'}`;
+
+        document.getElementById('hero-total-assigned').textContent = formatMoney(metrics.totalAssigned);
+        const pct = metrics.totalIncome > 0 ? Math.round((metrics.totalAssigned / metrics.totalIncome) * 100) : 0;
+        document.getElementById('hero-assigned-pct').textContent = `${pct}% of income allocated`;
+
+        document.getElementById('hero-total-spent').textContent = formatMoney(metrics.totalSpent);
+        document.getElementById('hero-available-cash').textContent = `${formatMoney(metrics.totalAvailable)} left in envelopes`;
+
+        // Zero-Based Status Logic
+        const statusCard = document.getElementById('zero-base-status-card');
+        const labelEl = document.getElementById('zero-base-label');
+        const amountEl = document.getElementById('hero-left-to-assign');
+        const msgEl = document.getElementById('zero-base-message');
+        const iconEl = document.getElementById('zero-base-icon');
+        const actionWrap = document.getElementById('zero-base-action-wrap');
+
+        // Tolerance of 1 Naira for floating-point currency conversions
+        if (Math.abs(metrics.leftToAssign) < 1) {
+          statusCard.className = 'lg:col-span-5 rounded-xl p-4 sm:p-5 border transition-all duration-300 bg-emerald-500/20 border-emerald-400/50';
+          labelEl.className = 'inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-300';
+          labelEl.textContent = 'Zero-Based Achieved ✨';
+          amountEl.textContent = formatMoney(0);
+          msgEl.textContent = 'Zero-Based Achieved! Every Naira has a job. Sapa has been officially locked out.';
+          iconEl.textContent = '🛡️';
+          actionWrap.classList.add('hidden');
+        } else if (metrics.leftToAssign > 0) {
+          statusCard.className = 'lg:col-span-5 rounded-xl p-4 sm:p-5 border transition-all duration-300 bg-amber-500/15 border-amber-300/40';
+          labelEl.className = 'inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-300';
+          labelEl.textContent = 'Left to Assign';
+          amountEl.textContent = formatMoney(metrics.leftToAssign);
+          msgEl.textContent = `You have ${formatMoney(metrics.leftToAssign)} unassigned. Give it a job so idle cash doesn’t vanish!`;
+          iconEl.textContent = '⚡';
+          actionWrap.classList.remove('hidden');
+        } else {
+          const overBy = Math.abs(metrics.leftToAssign);
+          statusCard.className = 'lg:col-span-5 rounded-xl p-4 sm:p-5 border transition-all duration-300 bg-rose-500/20 border-rose-400/50';
+          labelEl.className = 'inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-rose-300';
+          labelEl.textContent = 'Over-Assigned Alert';
+          amountEl.textContent = `-${formatMoney(overBy)}`;
+          msgEl.textContent = `Over-Assigned by ${formatMoney(overBy)} — Trim envelopes or add an income stream to balance to zero!`;
+          iconEl.textContent = '🚨';
+          actionWrap.classList.add('hidden');
+        }
+      }
+
+      function renderIncomePanel() {
+        const data = getCurrentMonthData();
+        const listEl = document.getElementById('income-list');
+        if (data.incomes.length === 0) {
+          listEl.innerHTML = `<div class="col-span-full text-center py-4 text-xs text-slate-500 bg-cream-50 rounded-xl border border-dashed border-slate-200">No income streams added yet. Add your salary or side hustle below!</div>`;
+          return;
+        }
+
+        listEl.innerHTML = data.incomes.map(inc => `
+          <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-cream-50 border border-slate-200/80 hover:border-brand-300 transition">
+            <div class="min-w-0">
+              <p class="text-xs font-bold text-slate-800 truncate">${escapeHtml(inc.name)}</p>
+              <p class="text-sm font-display font-extrabold text-brand-800 mt-0.5">${formatMoney(inc.amount)}</p>
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+              <button type="button" data-edit-income="${inc.id}" title="Edit Income Amount" class="p-1.5 rounded-lg text-slate-500 hover:text-brand-800 hover:bg-white transition cursor-pointer">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+              </button>
+              <button type="button" data-delete-income="${inc.id}" title="Delete Income Stream" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-white transition cursor-pointer">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      function renderEnvelopes(metrics) {
+        const data = getCurrentMonthData();
+        const container = document.getElementById('envelopes-container');
+
+        // Update category filter button styles
+        document.querySelectorAll('.cat-filter-btn').forEach(btn => {
+          const active = btn.dataset.catFilter === activeCategoryFilter;
+          btn.className = active
+            ? 'cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-800 text-white transition cursor-pointer'
+            : 'cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200/70 transition cursor-pointer';
+        });
+
+        const visibleCategories = activeCategoryFilter === 'ALL'
+          ? CATEGORIES
+          : CATEGORIES.filter(c => c.name === activeCategoryFilter);
+
+        container.innerHTML = visibleCategories.map(cat => {
+          const envs = data.envelopes.filter(e => e.category === cat.name);
+          const catAssigned = envs.reduce((s, e) => s + Number(e.assigned || 0), 0);
+          const catSpent = envs.reduce((s, e) => s + (metrics.spentByEnvelope[e.id] || 0), 0);
+
+          const cardsHtml = envs.length === 0
+            ? `<div class="col-span-full rounded-2xl border border-dashed border-slate-200 bg-white/60 p-6 text-center text-xs text-slate-500">No envelopes in <strong>${cat.name}</strong> yet. Click "+ New Envelope" to create one.</div>`
+            : envs.map(env => renderEnvelopeCard(env, metrics.spentByEnvelope[env.id] || 0, cat)).join('');
+
+          return `
+            <div class="space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2 px-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">${cat.icon}</span>
+                  <h3 class="font-display font-bold text-base text-slate-900">${cat.name}</h3>
+                  <span class="text-xs font-semibold text-slate-400">(${envs.length})</span>
+                </div>
+                <div class="text-xs font-semibold text-slate-600">
+                  Assigned: <span class="text-slate-900 font-bold">${formatMoney(catAssigned)}</span>
+                  <span class="mx-1.5 text-slate-300">•</span>
+                  Spent: <span class="text-slate-900 font-bold">${formatMoney(catSpent)}</span>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ${cardsHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function renderEnvelopeCard(env, spent, catMeta) {
+        const assigned = Number(env.assigned || 0);
+        const available = assigned - spent;
+        const isOverspent = available < -0.004;
+        const pctUsed = assigned > 0 ? Math.min(100, Math.round((spent / assigned) * 100)) : (spent > 0 ? 100 : 0);
+
+        let barColor = 'bg-brand-600';
+        let availBadgeClass = 'bg-emerald-50 text-emerald-800 border-emerald-200';
+        if (isOverspent) {
+          barColor = 'bg-rose-500';
+          availBadgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
+        } else if (pctUsed >= 80) {
+          barColor = 'bg-amber-500';
+          availBadgeClass = 'bg-amber-50 text-amber-800 border-amber-200';
+        }
+
+        const displayAssignedVal = Number(toDisplayAmount(assigned).toFixed(CURRENCIES[state.currency].decimals));
+
+        return `
+          <article class="bg-white rounded-2xl p-4 sm:p-5 border ${isOverspent ? 'border-rose-300 ring-2 ring-rose-500/10' : 'border-slate-200/90'} shadow-2xs hover:shadow-md transition flex flex-col justify-between gap-3.5">
+            <!-- Card Header -->
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-10 h-10 rounded-xl ${catMeta.bgLight} border ${catMeta.borderCol} flex items-center justify-center text-lg shrink-0">
+                  ${escapeHtml(env.icon || '✉️')}
+                </div>
+                <div class="min-w-0">
+                  <h4 class="font-display font-bold text-sm sm:text-base text-slate-900 truncate">${escapeHtml(env.name)}</h4>
+                  <span class="inline-block text-[11px] font-semibold ${catMeta.textCol}">${catMeta.name}</span>
+                </div>
+              </div>
+
+              <!-- Edit / Delete Controls -->
+              <div class="flex items-center gap-1 shrink-0">
+                <button type="button" data-edit-envelope="${env.id}" title="Edit Envelope" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                </button>
+                <button type="button" data-delete-envelope="${env.id}" title="Delete Envelope" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Interactive Assigned Stepper & Input -->
+            <div class="bg-cream-50 rounded-xl p-2.5 border border-slate-200/70 flex items-center justify-between gap-2">
+              <span class="text-xs font-semibold text-slate-600">Assigned:</span>
+              <div class="flex items-center gap-1.5">
+                <button type="button" data-step-env="${env.id}" data-step-dir="-1" aria-label="Decrease assigned budget" class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-sm flex items-center justify-center transition cursor-pointer">−</button>
+                <div class="relative w-28 sm:w-32">
+                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">${CURRENCIES[state.currency].symbol}</span>
+                  <input type="number" step="any" min="0" data-assign-input="${env.id}" value="${displayAssignedVal}" aria-label="Assigned amount for ${escapeHtml(env.name)}" class="w-full rounded-lg border border-slate-200 bg-white pl-6 pr-2 py-1 text-right text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-600" />
+                </div>
+                <button type="button" data-step-env="${env.id}" data-step-dir="1" aria-label="Increase assigned budget" class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-sm flex items-center justify-center transition cursor-pointer">+</button>
+              </div>
+            </div>
+
+            <!-- Progress Bar + Spent vs Available -->
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-slate-500 font-medium">Spent: <strong class="text-slate-800">${formatMoney(spent)}</strong></span>
+                <span class="px-2 py-0.5 rounded-md border font-bold ${availBadgeClass}">
+                  ${isOverspent ? 'Over: ' : 'Left: '}${formatMoney(available)}
+                </span>
+              </div>
+              <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-300 ${barColor}" style="width: ${pctUsed}%"></div>
+              </div>
+            </div>
+
+            <!-- Card Footer Actions -->
+            <div class="pt-1 flex items-center justify-between gap-2">
+              <button type="button" data-quick-log="${env.id}" class="inline-flex items-center gap-1 text-xs font-bold text-brand-800 hover:text-brand-950 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-xl transition cursor-pointer">
+                <span>+ Log Expense</span>
+              </button>
+
+              ${isOverspent ? `
+                <button type="button" data-cover-overspent="${env.id}" class="inline-flex items-center gap-1 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 px-3 py-1.5 rounded-xl shadow-2xs transition cursor-pointer">
+                  <span>⇄ Cover Overspending</span>
+                </button>
+              ` : `<span class="text-[11px] font-medium text-slate-400">${pctUsed}% used</span>`}
+            </div>
+          </article>
+        `;
+      }
+
+      function renderExpenseFormOptions() {
+        const data = getCurrentMonthData();
+        const select = document.getElementById('expense-envelope-select');
+        const filterSelect = document.getElementById('tx-filter-envelope');
+        const prevSelected = select.value;
+        const prevFilter = activeTxEnvelopeFilter;
+
+        select.innerHTML = data.envelopes.map(env =>
+          `<option value="${env.id}">${escapeHtml(env.icon)} ${escapeHtml(env.name)}</option>`
+        ).join('');
+
+        if (prevSelected && data.envelopes.some(e => e.id === prevSelected)) {
+          select.value = prevSelected;
+        }
+
+        filterSelect.innerHTML = `<option value="ALL">All Envelopes</option>` + data.envelopes.map(env =>
+          `<option value="${env.id}">${escapeHtml(env.icon)} ${escapeHtml(env.name)}</option>`
+        ).join('');
+
+        if (prevFilter && (prevFilter === 'ALL' || data.envelopes.some(e => e.id === prevFilter))) {
+          filterSelect.value = prevFilter;
+        }
+      }
+
+      function renderTransactionLedger() {
+        const data = getCurrentMonthData();
+        const listEl = document.getElementById('transaction-list');
+        const countEl = document.getElementById('tx-count-label');
+
+        const envMap = {};
+        data.envelopes.forEach(e => { envMap[e.id] = e; });
+
+        const filtered = data.transactions
+          .filter(tx => activeTxEnvelopeFilter === 'ALL' || tx.envelopeId === activeTxEnvelopeFilter)
+          .sort((a, b) => b.date.localeCompare(a.date));
+
+        countEl.textContent = `${filtered.length} ${filtered.length === 1 ? 'expense' : 'expenses'} recorded`;
+
+        if (filtered.length === 0) {
+          listEl.innerHTML = `<div class="py-8 text-center text-xs text-slate-400">No expenses found for this selection.</div>`;
+          return;
+        }
+
+        listEl.innerHTML = filtered.map(tx => {
+          const env = envMap[tx.envelopeId] || { icon: '🧾', name: 'Deleted Envelope' };
+          return `
+            <div class="py-3 flex items-center justify-between gap-3 group">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-cream-100 border border-slate-200/80 flex items-center justify-center text-sm shrink-0">
+                  ${escapeHtml(env.icon)}
+                </div>
+                <div class="min-w-0">
+                  <p class="text-xs font-bold text-slate-800 truncate">${escapeHtml(tx.desc)}</p>
+                  <p class="text-[11px] text-slate-400 truncate">${escapeHtml(env.name)} • ${escapeHtml(tx.date)}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs font-extrabold text-slate-900">-${formatMoney(tx.amount)}</span>
+                <button type="button" data-delete-tx="${tx.id}" title="Delete & Refund Envelope" class="p-1 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function renderAnalytics(metrics) {
+        const data = getCurrentMonthData();
+        const legendEl = document.getElementById('analytics-legend');
+
+        const categoryTotals = CATEGORIES.map(cat => {
+          const amount = data.envelopes
+            .filter(e => e.category === cat.name)
+            .reduce((s, e) => s + Number(e.assigned || 0), 0);
+          const pct = metrics.totalAssigned > 0 ? Math.round((amount / metrics.totalAssigned) * 100) : 0;
+          return { ...cat, amount, pct };
+        });
+
+        // Savings Rate & Sapa Shield Score
+        const savingsObj = categoryTotals.find(c => c.name === 'Savings & Investments');
+        const savingsAmount = savingsObj ? savingsObj.amount : 0;
+        const savingsRate = metrics.totalIncome > 0 ? Math.round((savingsAmount / metrics.totalIncome) * 100) : 0;
+        document.getElementById('analytics-savings-rate').textContent = `${savingsRate}%`;
+
+        // Calculate Sapa Shield Score (0 - 100) based on savings rate, zero-based discipline, and no overspending
+        const overspentCount = data.envelopes.filter(e => (e.assigned - (metrics.spentByEnvelope[e.id] || 0)) < -0.004).length;
+        let shieldScore = 40 + Math.min(40, savingsRate * 1.5);
+        if (Math.abs(metrics.leftToAssign) < 1 && metrics.totalIncome > 0) shieldScore += 20;
+        shieldScore = Math.max(10, Math.min(100, Math.round(shieldScore - overspentCount * 10)));
+
+        const shieldEl = document.getElementById('sapa-shield-score');
+        const shieldBadge = document.getElementById('sapa-shield-badge');
+        shieldEl.textContent = `${shieldScore}/100`;
+        if (shieldScore >= 75) {
+          shieldBadge.className = 'px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-right';
+          shieldEl.className = 'text-sm font-display font-extrabold text-emerald-900';
+        } else if (shieldScore >= 50) {
+          shieldBadge.className = 'px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-200 text-right';
+          shieldEl.className = 'text-sm font-display font-extrabold text-amber-900';
+        } else {
+          shieldBadge.className = 'px-2.5 py-1 rounded-xl bg-rose-50 border border-rose-200 text-right';
+          shieldEl.className = 'text-sm font-display font-extrabold text-rose-900';
+        }
+
+        legendEl.innerHTML = categoryTotals.map(c => `
+          <div class="flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${c.color}"></span>
+              <span class="font-semibold text-slate-700 truncate">${c.name}</span>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="font-bold text-slate-900">${formatMoney(c.amount)}</span>
+              <span class="w-9 text-right text-[11px] font-semibold text-slate-400">${c.pct}%</span>
+            </div>
+          </div>
+        `).join('');
+
+        drawDonutChart(categoryTotals, metrics.totalAssigned);
+      }
+
+      // =========================================================================
+      // 7. HTML5 CANVAS DONUT CHART (High-DPI Responsive)
+      // =========================================================================
+      function drawDonutChart(categoryTotals, totalAssigned) {
+        const canvas = document.getElementById('allocation-donut-canvas');
+        if (!canvas || !canvas.parentElement) return;
+
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const size = Math.max(160, Math.floor(rect.width || 192));
+        const dpr = window.devicePixelRatio || 1;
+
+        canvas.width = size * dpr;
+        canvas.height = size * dpr;
+        canvas.style.width = `${size}px`;
+        canvas.style.height = `${size}px`;
+
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, size, size);
+
+        const cx = size / 2;
+        const cy = size / 2;
+        const radius = (size / 2) - 14;
+        const lineWidth = 22;
+
+        if (totalAssigned <= 0) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+          ctx.strokeStyle = '#e2e8f0';
+          ctx.lineWidth = lineWidth;
+          ctx.stroke();
+          return;
+        }
+
+        let startAngle = -Math.PI / 2;
+        categoryTotals.forEach(cat => {
+          if (cat.amount <= 0) return;
+          const sliceAngle = (cat.amount / totalAssigned) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius, startAngle, startAngle + sliceAngle);
+          ctx.strokeStyle = cat.color;
+          ctx.lineWidth = lineWidth;
+          ctx.lineCap = 'butt';
+          ctx.stroke();
+          startAngle += sliceAngle;
+        });
+      }
+
+      // =========================================================================
+      // 8. EVENT HANDLERS & INTERACTIONS
+      // =========================================================================
+      function bindEvents() {
+        // Month Switcher
+        document.getElementById('month-selector').addEventListener('change', (e) => {
+          state.currentMonth = e.target.value;
+          saveState();
+          setDefaultExpenseDate();
+          renderAll();
+          showToast(`Switched to ${e.target.options[e.target.selectedIndex].text}`);
+        });
+
+        // Currency Switcher
+        document.querySelectorAll('.currency-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.currency = btn.dataset.currency;
+            saveState();
+            renderAll();
+            const note = CURRENCIES[state.currency].rateNote;
+            showToast(`Display currency: ${state.currency}${note ? ` (${note})` : ''}`);
+          });
+        });
+
+        // Reset Demo Data
+        document.getElementById('reset-demo-btn').addEventListener('click', () => {
+          state = createDemoData(state.currentMonth);
+          saveState();
+          renderAll();
+          showToast('Loaded realistic Nigerian monthly budget demo!');
+        });
+
+        // Export CSV
+        document.getElementById('export-csv-btn').addEventListener('click', exportBudgetCSV);
+
+        // Auto-Assign Remainder to Savings
+        document.getElementById('auto-assign-btn').addEventListener('click', () => {
+          const metrics = computeBudgetMetrics();
+          if (metrics.leftToAssign <= 0) return;
+          const data = getCurrentMonthData();
+          let targetEnv = data.envelopes.find(e => e.category === 'Savings & Investments') || data.envelopes[0];
+          if (!targetEnv) {
+            showToast('Create an envelope first to assign funds.', 'warning');
+            return;
+          }
+          targetEnv.assigned = Number(targetEnv.assigned || 0) + metrics.leftToAssign;
+          saveState();
+          renderAll();
+          showToast(`Assigned ${formatMoney(metrics.leftToAssign)} to "${targetEnv.name}"!`);
+        });
+
+        // Toggle Income Panel
+        const toggleIncome = () => {
+          isIncomePanelOpen = !isIncomePanelOpen;
+          const body = document.getElementById('income-panel-body');
+          const text = document.getElementById('income-panel-toggle-text');
+          const chev = document.getElementById('income-panel-chevron');
+          body.classList.toggle('hidden', !isIncomePanelOpen);
+          text.textContent = isIncomePanelOpen ? 'Hide Streams' : 'Show Streams';
+          chev.style.transform = isIncomePanelOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+        };
+        document.getElementById('toggle-income-panel-btn').addEventListener('click', toggleIncome);
+        document.getElementById('toggle-income-drawer-top').addEventListener('click', () => {
+          if (!isIncomePanelOpen) toggleIncome();
+          document.getElementById('income-name-input').focus();
+        });
+
+        // Add Income Stream
+        document.getElementById('add-income-form').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const nameInput = document.getElementById('income-name-input');
+          const amtInput = document.getElementById('income-amount-input');
+          const name = nameInput.value.trim();
+          const rawVal = parseFloat(amtInput.value);
+          if (!name || isNaN(rawVal) || rawVal <= 0) return;
+
+          const data = getCurrentMonthData();
+          data.incomes.push({
+            id: 'inc-' + Date.now(),
+            name,
+            amount: fromDisplayAmount(rawVal)
+          });
+          nameInput.value = '';
+          amtInput.value = '';
+          saveState();
+          renderAll();
+          showToast(`Added income stream: ${name}`);
+        });
+
+        // Income List Delegation (Edit / Delete)
+        document.getElementById('income-list').addEventListener('click', (e) => {
+          const delBtn = e.target.closest('[data-delete-income]');
+          if (delBtn) {
+            const id = delBtn.dataset.deleteIncome;
+            const data = getCurrentMonthData();
+            data.incomes = data.incomes.filter(i => i.id !== id);
+            saveState();
+            renderAll();
+            showToast('Removed income stream', 'warning');
+            return;
+          }
+
+          const editBtn = e.target.closest('[data-edit-income]');
+          if (editBtn) {
+            const id = editBtn.dataset.editIncome;
+            const data = getCurrentMonthData();
+            const item = data.incomes.find(i => i.id === id);
+            if (!item) return;
+            // Inline prompt replacement: populate form & remove old entry for clean editing
+            document.getElementById('income-name-input').value = item.name;
+            document.getElementById('income-amount-input').value = Number(toDisplayAmount(item.amount).toFixed(CURRENCIES[state.currency].decimals));
+            data.incomes = data.incomes.filter(i => i.id !== id);
+            saveState();
+            renderAll();
+            document.getElementById('income-amount-input').focus();
+            showToast('Loaded stream into editor above — update and click Add Inflow');
+          }
+        });
+
+        // Category Filter Tabs
+        document.querySelectorAll('.cat-filter-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            activeCategoryFilter = btn.dataset.catFilter;
+            renderEnvelopes(computeBudgetMetrics());
+          });
+        });
+
+        // Envelope Interactions Delegation (Steppers, Direct Input, Quick Log, Cover Overspending, Edit, Delete)
+        const envContainer = document.getElementById('envelopes-container');
+
+        envContainer.addEventListener('click', (e) => {
+          const data = getCurrentMonthData();
+
+          // Stepper +/-
+          const stepBtn = e.target.closest('[data-step-env]');
+          if (stepBtn) {
+            const env = data.envelopes.find(x => x.id === stepBtn.dataset.stepEnv);
+            if (!env) return;
+            const dir = Number(stepBtn.dataset.stepDir);
+            const stepNgn = fromDisplayAmount(CURRENCIES[state.currency].step);
+            env.assigned = Math.max(0, Number(env.assigned || 0) + dir * stepNgn);
+            saveState();
+            renderAll();
+            return;
+          }
+
+          // Quick Log Expense
+          const quickBtn = e.target.closest('[data-quick-log]');
+          if (quickBtn) {
+            const envId = quickBtn.dataset.quickLog;
+            const select = document.getElementById('expense-envelope-select');
+            select.value = envId;
+            const amtInput = document.getElementById('expense-amount-input');
+            amtInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            amtInput.focus();
+            return;
+          }
+
+          // Cover Overspending Modal
+          const coverBtn = e.target.closest('[data-cover-overspent]');
+          if (coverBtn) {
+            openCoverOverspendingModal(coverBtn.dataset.coverOverspent);
+            return;
+          }
+
+          // Edit Envelope Modal
+          const editBtn = e.target.closest('[data-edit-envelope]');
+          if (editBtn) {
+            openEnvelopeModal(editBtn.dataset.editEnvelope);
+            return;
+          }
+
+          // Delete Envelope
+          const delBtn = e.target.closest('[data-delete-envelope]');
+          if (delBtn) {
+            const id = delBtn.dataset.deleteEnvelope;
+            const target = data.envelopes.find(x => x.id === id);
+            data.envelopes = data.envelopes.filter(x => x.id !== id);
+            data.transactions = data.transactions.filter(t => t.envelopeId !== id);
+            saveState();
+            renderAll();
+            showToast(`Deleted "${target ? target.name : 'Envelope'}"`, 'warning');
+          }
+        });
+
+        envContainer.addEventListener('change', (e) => {
+          const input = e.target.closest('[data-assign-input]');
+          if (!input) return;
+          const data = getCurrentMonthData();
+          const env = data.envelopes.find(x => x.id === input.dataset.assignInput);
+          if (!env) return;
+          const val = Math.max(0, parseFloat(input.value) || 0);
+          env.assigned = fromDisplayAmount(val);
+          saveState();
+          renderAll();
+        });
+
+        // Quick Expense Logger Form
+        document.getElementById('quick-expense-form').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const data = getCurrentMonthData();
+          const envelopeId = document.getElementById('expense-envelope-select').value;
+          const rawAmount = parseFloat(document.getElementById('expense-amount-input').value);
+          const date = document.getElementById('expense-date-input').value;
+          const desc = document.getElementById('expense-desc-input').value.trim();
+
+          if (!envelopeId || isNaN(rawAmount) || rawAmount <= 0 || !desc) return;
+
+          data.transactions.unshift({
+            id: 'tx-' + Date.now(),
+            envelopeId,
+            desc,
+            amount: fromDisplayAmount(rawAmount),
+            date: date || `${state.currentMonth}-15`
+          });
+
+          document.getElementById('expense-amount-input').value = '';
+          document.getElementById('expense-desc-input').value = '';
+          saveState();
+          renderAll();
+          showToast(`Logged ${formatMoney(fromDisplayAmount(rawAmount))} for "${desc}"`);
+        });
+
+        // Transaction Filter & Delete
+        document.getElementById('tx-filter-envelope').addEventListener('change', (e) => {
+          activeTxEnvelopeFilter = e.target.value;
+          renderTransactionLedger();
+        });
+
+        document.getElementById('transaction-list').addEventListener('click', (e) => {
+          const delBtn = e.target.closest('[data-delete-tx]');
+          if (!delBtn) return;
+          const id = delBtn.dataset.deleteTx;
+          const data = getCurrentMonthData();
+          data.transactions = data.transactions.filter(t => t.id !== id);
+          saveState();
+          renderAll();
+          showToast('Transaction removed & envelope refunded');
+        });
+
+        // Open New Envelope Modal
+        document.getElementById('open-new-envelope-modal').addEventListener('click', () => {
+          openEnvelopeModal(null);
+        });
+
+        // Save New/Edited Envelope
+        document.getElementById('envelope-modal-form').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const data = getCurrentMonthData();
+          const editId = document.getElementById('edit-envelope-id').value;
+          const icon = document.getElementById('env-icon-input').value.trim() || '✉️';
+          const name = document.getElementById('env-name-input').value.trim();
+          const category = document.getElementById('env-category-input').value;
+          const assignedNgn = fromDisplayAmount(Math.max(0, parseFloat(document.getElementById('env-assigned-input').value) || 0));
+
+          if (!name) return;
+
+          if (editId) {
+            const existing = data.envelopes.find(x => x.id === editId);
+            if (existing) {
+              existing.icon = icon;
+              existing.name = name;
+              existing.category = category;
+              existing.assigned = assignedNgn;
+            }
+            showToast(`Updated "${name}"`);
+          } else {
+            data.envelopes.push({
+              id: 'env-' + Date.now(),
+              icon,
+              name,
+              category,
+              assigned: assignedNgn
+            });
+            showToast(`Created envelope "${name}"`);
+          }
+
+          closeModal('envelope-modal');
+          saveState();
+          renderAll();
+        });
+
+        // Submit Cover Overspending Form
+        document.getElementById('cover-modal-form').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const data = getCurrentMonthData();
+          const targetId = document.getElementById('cover-target-id').value;
+          const sourceId = document.getElementById('cover-source-select').value;
+          const moveNgn = fromDisplayAmount(Math.max(0, parseFloat(document.getElementById('cover-amount-input').value) || 0));
+
+          const targetEnv = data.envelopes.find(x => x.id === targetId);
+          const sourceEnv = data.envelopes.find(x => x.id === sourceId);
+
+          if (!targetEnv || !sourceEnv || moveNgn <= 0) return;
+
+          sourceEnv.assigned = Math.max(0, Number(sourceEnv.assigned || 0) - moveNgn);
+          targetEnv.assigned = Number(targetEnv.assigned || 0) + moveNgn;
+
+          closeModal('cover-modal');
+          saveState();
+          renderAll();
+          showToast(`Moved ${formatMoney(moveNgn)} from "${sourceEnv.name}" to "${targetEnv.name}"`);
+        });
+
+        // Close Modal Buttons
+        document.querySelectorAll('[data-close-modal]').forEach(btn => {
+          btn.addEventListener('click', () => closeModal(btn.dataset.closeModal));
+        });
+
+        // Redraw Donut Chart on Window Resize
+        window.addEventListener('resize', () => {
+          renderAnalytics(computeBudgetMetrics());
+        });
+      }
+
+      // =========================================================================
+      // 9. MODAL HELPERS & CSV EXPORT
+      // =========================================================================
+      function openEnvelopeModal(envelopeId) {
+        const modal = document.getElementById('envelope-modal');
+        const titleEl = document.getElementById('envelope-modal-title');
+        const idInput = document.getElementById('edit-envelope-id');
+        const iconInput = document.getElementById('env-icon-input');
+        const nameInput = document.getElementById('env-name-input');
+        const catInput = document.getElementById('env-category-input');
+        const assignedInput = document.getElementById('env-assigned-input');
+
+        if (envelopeId) {
+          const env = getCurrentMonthData().envelopes.find(x => x.id === envelopeId);
+          if (!env) return;
+          titleEl.textContent = 'Edit Envelope';
+          idInput.value = env.id;
+          iconInput.value = env.icon;
+          nameInput.value = env.name;
+          catInput.value = env.category;
+          assignedInput.value = Number(toDisplayAmount(env.assigned).toFixed(CURRENCIES[state.currency].decimals));
+        } else {
+          titleEl.textContent = 'Create New Envelope';
+          idInput.value = '';
+          iconInput.value = '✉️';
+          nameInput.value = '';
+          catInput.value = 'Daily Living';
+          assignedInput.value = '';
+        }
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        nameInput.focus();
+      }
+
+      function openCoverOverspendingModal(targetEnvId) {
+        const data = getCurrentMonthData();
+        const metrics = computeBudgetMetrics();
+        const targetEnv = data.envelopes.find(x => x.id === targetEnvId);
+        if (!targetEnv) return;
+
+        const spent = metrics.spentByEnvelope[targetEnv.id] || 0;
+        const deficitNgn = Math.max(0, spent - targetEnv.assigned);
+
+        const donors = data.envelopes.filter(e => {
+          if (e.id === targetEnv.id) return false;
+          const avail = e.assigned - (metrics.spentByEnvelope[e.id] || 0);
+          return avail > 0;
+        });
+
+        if (donors.length === 0) {
+          showToast('No other envelopes have positive available balance to cover this.', 'error');
+          return;
+        }
+
+        document.getElementById('cover-target-id').value = targetEnv.id;
+        document.getElementById('cover-modal-desc').innerHTML =
+          `<strong>${escapeHtml(targetEnv.icon)} ${escapeHtml(targetEnv.name)}</strong> is overspent by <strong>${formatMoney(deficitNgn)}</strong>. Roll with the punches by shifting funds from an envelope with spare cash:`;
+
+        const select = document.getElementById('cover-source-select');
+        select.innerHTML = donors.map(d => {
+          const avail = d.assigned - (metrics.spentByEnvelope[d.id] || 0);
+          return `<option value="${d.id}">${escapeHtml(d.icon)} ${escapeHtml(d.name)} (${formatMoney(avail)} left)</option>`;
+        }).join('');
+
+        document.getElementById('cover-amount-input').value = Number(toDisplayAmount(deficitNgn).toFixed(CURRENCIES[state.currency].decimals));
+
+        const modal = document.getElementById('cover-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+
+      function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+
+      function setDefaultExpenseDate() {
+        const dateInput = document.getElementById('expense-date-input');
+        dateInput.value = `${state.currentMonth}-20`;
+      }
+
+      function exportBudgetCSV() {
+        const data = getCurrentMonthData();
+        const metrics = computeBudgetMetrics();
+        const rows = [
+          ['SapaFlow Zero-Based Budget Summary', state.currentMonth, `Currency: ${state.currency}`],
+          [],
+          ['Category', 'Envelope', `Assigned (${state.currency})`, `Spent (${state.currency})`, `Available (${state.currency})`]
+        ];
+
+        data.envelopes.forEach(env => {
+          const spent = metrics.spentByEnvelope[env.id] || 0;
+          const avail = env.assigned - spent;
+          rows.push([
+            `"${env.category}"`,
+            `"${env.name}"`,
+            toDisplayAmount(env.assigned).toFixed(2),
+            toDisplayAmount(spent).toFixed(2),
+            toDisplayAmount(avail).toFixed(2)
+          ]);
+        });
+
+        rows.push([]);
+        rows.push(['Total Income', '', toDisplayAmount(metrics.totalIncome).toFixed(2)]);
+        rows.push(['Total Assigned', '', toDisplayAmount(metrics.totalAssigned).toFixed(2)]);
+        rows.push(['Left to Assign', '', toDisplayAmount(metrics.leftToAssign).toFixed(2)]);
+
+        const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(r => r.join(',')).join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `SapaFlow_Budget_${state.currentMonth}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        showToast(`Exported SapaFlow_Budget_${state.currentMonth}.csv`);
+      }
+
+      // =========================================================================
+      // 10. INITIALIZATION
+      // =========================================================================
+      window.addEventListener('DOMContentLoaded', () => {
+        setDefaultExpenseDate();
+        bindEvents();
+        renderAll();
+      });
+    })();
+  </script>
+</body>
+</html>
